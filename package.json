@@ -3,7 +3,6 @@
   "license": "MIT",
   "scripts": {
     "test": "npm run lint && hardhat test",
-    "fuzz": "hardhat compile && fuzzing/fuzz.sh",
     "start": "concurrently --names \"hardhat,deployment\"  --prefix \"[{time} {name}]\" \"hardhat node\" \"sleep 2 && npm run mine && npm run deploy -- --network localhost\"",
     "compile": "hardhat compile",
     "format": "prettier --write test/**/*.js --plugin=prettier-plugin-solidity contracts/**/*.sol ",
