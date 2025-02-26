@@ -846,18 +846,17 @@ describe("Marketplace", function () {
       ).to.be.revertedWithCustomError(marketplace, "Marketplace_InvalidState")
     })
 
-    it("rejects withdraw when already withdrawn", async function () {
+    it("does not withdraw more than once", async function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilFinished(marketplace, requestId(request))
-
       switchAccount(client)
       await marketplace.withdrawFunds(slot.request)
-      await expect(
-        marketplace.withdrawFunds(slot.request),
-      ).to.be.revertedWithCustomError(
-        marketplace,
-        "Marketplace_NothingToWithdraw",
-      )
+
+      const startBalance = await token.balanceOf(client.address)
+      await marketplace.withdrawFunds(slot.request)
+      const endBalance = await token.balanceOf(client.address)
+
+      expect(endBalance - startBalance).to.equal(0)
     })
 
     it("emits event once request is cancelled", async function () {
