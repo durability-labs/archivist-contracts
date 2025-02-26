@@ -105,6 +105,7 @@ describe("Marketplace", function () {
   const config = exampleConfiguration()
 
   let marketplace
+  let vault
   let token
   let client, host, host1, host2, host3, validator
   let request
@@ -119,18 +120,20 @@ describe("Marketplace", function () {
     ;[client, host1, host2, host3, validator] = await ethers.getSigners()
     host = host1
 
-    const { testMarketplace, token: _token } = await ignition.deploy(
-      MarketplaceModule,
-      {
-        parameters: {
-          Marketplace: {
-            configuration: config,
-          },
+    const {
+      testMarketplace,
+      vault: _vault,
+      token: _token,
+    } = await ignition.deploy(MarketplaceModule, {
+      parameters: {
+        Marketplace: {
+          configuration: config,
         },
       },
-    )
+    })
 
     marketplace = testMarketplace
+    vault = _vault
     token = _token
 
     for (let account of [client, host1, host2, host3, validator]) {
@@ -815,17 +818,17 @@ describe("Marketplace", function () {
       switchAccount(client)
       await expect(
         marketplace.withdrawFunds(slot.request),
-      ).to.be.revertedWithCustomError(marketplace, "Marketplace_InvalidState")
+      ).to.be.revertedWithCustomError(vault, "VaultFundNotUnlocked")
     })
 
-    it("rejects withdraw when wrong account used", async function () {
+    it("withdraws nothing when wrong account used", async function () {
       await waitUntilCancelled(marketplace, request)
-      await expect(
-        marketplace.withdrawFunds(slot.request),
-      ).to.be.revertedWithCustomError(
-        marketplace,
-        "Marketplace_InvalidClientAddress",
-      )
+
+      const startBalance = await token.balanceOf(host.address)
+      await marketplace.withdrawFunds(slot.request)
+      const endBalance = await token.balanceOf(host.address)
+
+      expect(endBalance - startBalance).to.equal(0)
     })
 
     it("rejects withdraw when in wrong state", async function () {
@@ -843,7 +846,7 @@ describe("Marketplace", function () {
       switchAccount(client)
       await expect(
         marketplace.withdrawFunds(slot.request),
-      ).to.be.revertedWithCustomError(marketplace, "Marketplace_InvalidState")
+      ).to.be.revertedWithCustomError(vault, "VaultFundNotUnlocked")
     })
 
     it("does not withdraw more than once", async function () {
@@ -857,14 +860,6 @@ describe("Marketplace", function () {
       const endBalance = await token.balanceOf(client.address)
 
       expect(endBalance - startBalance).to.equal(0)
-    })
-
-    it("emits event once request is cancelled", async function () {
-      await waitUntilCancelled(marketplace, request)
-      switchAccount(client)
-      await expect(marketplace.withdrawFunds(slot.request))
-        .to.emit(marketplace, "RequestCancelled")
-        .withArgs(requestId(request))
     })
 
     it("withdraw rest of funds to the client for finished requests", async function () {
