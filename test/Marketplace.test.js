@@ -30,7 +30,7 @@ const {
   calculateBalance,
   payoutForDuration,
 } = require("./price")
-const { collateralPerSlot } = require("./collateral")
+const { collateralPerSlot, repairReward } = require("./collateral")
 const {
   ensureMinimumBlockHeight,
   advanceTime,
@@ -340,34 +340,42 @@ describe("Marketplace", function () {
       )
     })
 
-    it("gives discount on the collateral for repaired slot", async function () {
-      await marketplace.reserveSlot(slot.request, slot.index)
-      await marketplace.fillSlot(slot.request, slot.index, proof)
-      await marketplace.freeSlot(slotId(slot))
-      expect(await marketplace.slotState(slotId(slot))).to.equal(
-        SlotState.Repair,
-      )
+    describe("when repairing a slot", function () {
+      beforeEach(async function () {
+        await marketplace.reserveSlot(slot.request, slot.index)
+        await marketplace.fillSlot(slot.request, slot.index, proof)
+        await advanceTime(config.proofs.period + 1)
+        await marketplace.freeSlot(slotId(slot))
+      })
 
-      // We need to advance the time to next period, because filling slot
-      // must not be done in the same period as for that period there was already proof
-      // submitted with the previous `fillSlot` and the transaction would revert with "Proof already submitted".
-      await advanceTime(config.proofs.period + 1)
+      it("gives the host a discount on the collateral", async function () {
+        const collateral = collateralPerSlot(request)
+        const reward = repairReward(config, collateral)
+        const discountedCollateral = collateral - reward
+        const marketplaceAddress = await marketplace.getAddress()
+        await token.approve(marketplaceAddress, discountedCollateral)
+        await marketplace.reserveSlot(slot.request, slot.index)
+        const startBalance = await token.balanceOf(host.address)
+        await marketplace.fillSlot(slot.request, slot.index, proof)
+        const endBalance = await token.balanceOf(host.address)
 
-      const startBalance = await token.balanceOf(host.address)
-      const collateral = collateralPerSlot(request)
-      const discountedCollateral =
-        collateral -
-        Math.round(
-          (collateral * config.collateral.repairRewardPercentage) / 100,
-        )
-      await token.approve(await marketplace.getAddress(), discountedCollateral)
-      await marketplace.reserveSlot(slot.request, slot.index)
-      await marketplace.fillSlot(slot.request, slot.index, proof)
-      const endBalance = await token.balanceOf(host.address)
-      expect(startBalance - endBalance).to.equal(discountedCollateral)
-      expect(await marketplace.slotState(slotId(slot))).to.equal(
-        SlotState.Filled,
-      )
+        expect(startBalance - endBalance).to.equal(discountedCollateral)
+      })
+
+      it("tops up the host collateral with the repair reward", async function () {
+        const collateral = collateralPerSlot(request)
+        const reward = repairReward(config, collateral)
+        const discountedCollateral = collateral - reward
+        const marketplaceAddress = await marketplace.getAddress()
+        await token.approve(marketplaceAddress, discountedCollateral)
+        await marketplace.reserveSlot(slot.request, slot.index)
+
+        const startBalance = await marketplace.getSlotBalance(slotId(slot))
+        await marketplace.fillSlot(slot.request, slot.index, proof)
+        const endBalance = await marketplace.getSlotBalance(slotId(slot))
+
+        expect(endBalance - startBalance).to.equal(collateral)
+      })
     })
 
     it("fails to retrieve a request of an empty slot", async function () {
@@ -951,8 +959,9 @@ describe("Marketplace", function () {
 
       const hostPayouts = payouts.reduce((a, b) => a + b, 0)
       const refund = payoutForDuration(request, freedAt, requestEnd)
+      const reward = repairReward(config, collateralPerSlot(request))
       expect(endBalance - startBalance).to.equal(
-        maxPrice(request) - hostPayouts + refund,
+        maxPrice(request) - hostPayouts + refund + reward,
       )
     })
   })
