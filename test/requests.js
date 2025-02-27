@@ -1,11 +1,11 @@
 const { Assertion } = require("chai")
 
 const RequestState = {
-  New: 0,
-  Started: 1,
-  Cancelled: 2,
-  Finished: 3,
-  Failed: 4,
+  New: 0n,
+  Started: 1n,
+  Cancelled: 2n,
+  Finished: 3n,
+  Failed: 4n,
 }
 
 const SlotState = {
@@ -13,9 +13,8 @@ const SlotState = {
   Filled: 1n,
   Finished: 2n,
   Failed: 3n,
-  Paid: 4n,
-  Cancelled: 5n,
-  Repair: 6n,
+  Cancelled: 4n,
+  Repair: 5n,
 }
 
 function enableRequestAssertions() {
