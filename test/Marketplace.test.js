@@ -1270,14 +1270,16 @@ describe("Marketplace", function () {
         await waitUntilProofIsRequired(id)
         let missedPeriod = periodOf(await currentTime())
         await advanceTime(period + 1)
+
+        const startBalance = await marketplace.getSlotBalance(id)
+        await setNextBlockTimestamp(await currentTime())
         await marketplace.markProofAsMissing(id, missedPeriod)
+        const endBalance = await marketplace.getSlotBalance(id)
 
         const collateral = collateralPerSlot(request)
-        const expectedBalance = Math.round(
-          (collateral * (100 - slashPercentage)) / 100,
-        )
+        const expectedSlash = Math.round((collateral * slashPercentage) / 100)
 
-        expect(expectedBalance == (await marketplace.getSlotCollateral(id)))
+        expect(endBalance).to.equal(startBalance - expectedSlash)
       })
 
       it("rewards validator when marking proof as missing", async function () {
