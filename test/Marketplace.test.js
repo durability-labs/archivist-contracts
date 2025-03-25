@@ -312,7 +312,7 @@ describe("Marketplace", function () {
     })
   })
 
-  describe("filling a slot with collateral", function () {
+  describe("filling a slot", function () {
     beforeEach(async function () {
       switchAccount(client)
       await token.approve(await marketplace.getAddress(), maxPrice(request))
@@ -338,6 +338,16 @@ describe("Marketplace", function () {
       expect(await marketplace.getHost(slotId(slot))).to.equal(
         await host.getAddress(),
       )
+    })
+
+    it("collects only requested collateral and not more", async function () {
+      const marketplaceAddress = await marketplace.getAddress()
+      await token.approve(marketplaceAddress, collateralPerSlot(request) * 2)
+      const startBalance = await token.balanceOf(await host.getAddress())
+      await marketplace.reserveSlot(slot.request, slot.index)
+      await marketplace.fillSlot(slot.request, slot.index, proof)
+      const endBalance = await token.balanceOf(await host.getAddress())
+      expect(startBalance - endBalance).to.eq(collateralPerSlot(request))
     })
 
     describe("when repairing a slot", function () {
@@ -465,35 +475,14 @@ describe("Marketplace", function () {
         "Marketplace_ReservationRequired",
       )
     })
-  })
 
-  describe("filling slot without collateral", function () {
-    beforeEach(async function () {
-      switchAccount(client)
-      await token.approve(await marketplace.getAddress(), maxPrice(request))
-      await marketplace.requestStorage(request)
-      switchAccount(host)
-    })
-
-    it("is rejected when approved collateral is insufficient", async function () {
+    it("fails when approved collateral is insufficient", async function () {
       let insufficient = collateralPerSlot(request) - 1
       await token.approve(await marketplace.getAddress(), insufficient)
       await marketplace.reserveSlot(slot.request, slot.index)
       await expect(
         marketplace.fillSlot(slot.request, slot.index, proof),
       ).to.be.revertedWithCustomError(token, "ERC20InsufficientAllowance")
-    })
-
-    it("collects only requested collateral and not more", async function () {
-      await token.approve(
-        await marketplace.getAddress(),
-        collateralPerSlot(request) * 2,
-      )
-      const startBalance = await token.balanceOf(host.address)
-      await marketplace.reserveSlot(slot.request, slot.index)
-      await marketplace.fillSlot(slot.request, slot.index, proof)
-      const endBalance = await token.balanceOf(host.address)
-      expect(startBalance - endBalance).to.eq(collateralPerSlot(request))
     })
   })
 
@@ -1248,38 +1237,34 @@ describe("Marketplace", function () {
     })
 
     describe("slashing when missing proofs", function () {
-      it("reduces collateral when a proof is missing", async function () {
-        const id = slotId(slot)
-        const { slashPercentage } = config.collateral
+      const { slashPercentage, validatorRewardPercentage } = config.collateral
+      let id
+      let missedPeriod
+      let collateral
+      let slashAmount
+
+      beforeEach(async function () {
+        collateral = collateralPerSlot(request)
+        slashAmount = Math.round((collateral * slashPercentage) / 100)
+        id = slotId(slot)
         await marketplace.reserveSlot(slot.request, slot.index)
         await marketplace.fillSlot(slot.request, slot.index, proof)
-
         await waitUntilProofIsRequired(id)
-        let missedPeriod = periodOf(await currentTime())
+        missedPeriod = periodOf(await currentTime())
         await advanceTime(period + 1)
+      })
 
+      it("reduces balance when a proof is missing", async function () {
         const startBalance = await marketplace.getSlotBalance(id)
         await setNextBlockTimestamp(await currentTime())
         await marketplace.markProofAsMissing(id, missedPeriod)
         const endBalance = await marketplace.getSlotBalance(id)
+        expect(endBalance).to.equal(startBalance - slashAmount)
 
-        const collateral = collateralPerSlot(request)
-        const expectedSlash = Math.round((collateral * slashPercentage) / 100)
-
-        expect(endBalance).to.equal(startBalance - expectedSlash)
       })
 
       it("rewards validator when marking proof as missing", async function () {
-        const id = slotId(slot)
-        const { slashPercentage, validatorRewardPercentage } = config.collateral
-        await marketplace.reserveSlot(slot.request, slot.index)
-        await marketplace.fillSlot(slot.request, slot.index, proof)
-
         switchAccount(validator)
-
-        await waitUntilProofIsRequired(id)
-        let missedPeriod = periodOf(await currentTime())
-        await advanceTime(period + 1)
         await marketplace.markProofAsMissing(id, missedPeriod)
 
         const startBalance = await token.balanceOf(validator.address)
@@ -1287,11 +1272,8 @@ describe("Marketplace", function () {
         await marketplace.withdrawByValidator(slot.request)
         const endBalance = await token.balanceOf(validator.address)
 
-        const collateral = collateralPerSlot(request)
-        const slashedAmount = (collateral * slashPercentage) / 100
-
         const expectedReward = Math.round(
-          (slashedAmount * validatorRewardPercentage) / 100,
+          (slashAmount * validatorRewardPercentage) / 100,
         )
 
         expect(endBalance).to.equal(
