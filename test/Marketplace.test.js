@@ -1020,7 +1020,7 @@ describe("Marketplace", function () {
       for (let i = 0; i <= request.ask.maxSlotLoss; i++) {
         slot.index = i
         let id = slotId(slot)
-        await marketplace.forciblyFreeSlot(id)
+        await marketplace.freeSlot(id)
       }
       expect(await marketplace.requestState(slot.request)).to.equal(New)
     })
