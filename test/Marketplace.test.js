@@ -900,6 +900,7 @@ describe("Marketplace", function () {
     it("rejects withdraw for failed request before request end", async function () {
       await waitUntilStarted(marketplace, request, proof, token)
       await waitUntilFailed(marketplace, request)
+      switchAccount(client)
       await expect(
         marketplace.withdrawFunds(slot.request),
       ).to.be.revertedWithCustomError(vault, "VaultFundNotUnlocked")
