@@ -38,6 +38,7 @@ jobs:
 
   verify:
     runs-on: ubuntu-latest
+    if: false # TODO: re-enable once Certora is set up again
 
     steps:
       - uses: actions/checkout@v4

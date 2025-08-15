@@ -7,9 +7,9 @@ on:
       network:
         description: Network deploy on
         required: true
-        default: codex_devnet
+        default: devnet
         options:
-          - codex_devnet
+          - devnet
         type: choice
       token_address:
         description: Already deployed token address
@@ -31,7 +31,7 @@ on:
 env:
   NETWORK: ${{ inputs.network }}
   ADDRESS_TYPE: latest
-  MARKETPLACE_ADDRESS_URL: https://marketplace.codex.storage
+  MARKETPLACE_ADDRESS_URL: https://marketplace.archivist.storage
 
 
 jobs:
@@ -54,8 +54,8 @@ jobs:
             npm run deploy -- --network "${{ inputs.network }}" --deployment-id "${{ inputs.network }}" --reset
         env:
           TOKEN_ADDRESS: ${{ inputs.token_address }}
-          CODEX_DEVNET_URL: ${{ inputs.rpc_endpoint }}
-          CODEX_DEVNET_PRIVATE_KEY: ${{ secrets.CODEX_DEVNET_PRIVATE_KEY }}
+          ARCHIVIST_DEVNET_URL: ${{ inputs.rpc_endpoint }}
+          ARCHIVIST_DEVNET_PRIVATE_KEY: ${{ secrets.ARCHIVIST_DEVNET_PRIVATE_KEY }}
           HARDHAT_IGNITION_CONFIRM_RESET: false
           HARDHAT_IGNITION_CONFIRM_DEPLOYMENT: false
 
