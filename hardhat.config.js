@@ -29,33 +29,20 @@ module.exports = {
     localhost: {
       tags: ["local"],
     },
-    codexdisttestnetwork: {
+    disttestnetwork: {
       url: `${process.env.DISTTEST_NETWORK_URL}`,
     },
-    codex_devnet: {
-      url: process.env.CODEX_DEVNET_URL
-        ? `${process.env.CODEX_DEVNET_URL}`
+    devnet: {
+      url: process.env.ARCHIVIST_DEVNET_URL
+        ? `${process.env.ARCHIVIST_DEVNET_URL}`
         : `https://public.sepolia.rpc.status.network`,
       chainId: 1660990954,
-      accounts: process.env.CODEX_DEVNET_PRIVATE_KEY
-        ? [process.env.CODEX_DEVNET_PRIVATE_KEY]
+      accounts: process.env.ARCHIVIST_DEVNET_PRIVATE_KEY
+        ? [process.env.ARCHIVIST_DEVNET_PRIVATE_KEY]
         : [],
     },
-    codex_testnet: {
-      url: `${process.env.CODEX_TESTNET_URL}`,
-    },
-    taiko_test: {
-      url: "https://rpc.test.taiko.xyz",
-      accounts: [
-        // "<YOUR_SEPOLIA_TEST_WALLET_PRIVATE_KEY_HERE>"
-      ],
-    },
-    linea_testnet: {
-      url: `https://public.sepolia.rpc.status.network`,
-      chainId: 1660990954,
-      accounts: process.env.LINEA_TESTNET_PRIVATE_KEY
-        ? [process.env.LINEA_TESTNET_PRIVATE_KEY]
-        : [],
+    testnet: {
+      url: `${process.env.ARCHIVIST_TESTNET_URL}`,
     },
   },
 }
