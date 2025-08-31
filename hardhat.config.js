@@ -32,17 +32,14 @@ module.exports = {
     disttestnetwork: {
       url: `${process.env.DISTTEST_NETWORK_URL}`,
     },
-    devnet: {
-      url: process.env.ARCHIVIST_DEVNET_URL
-        ? `${process.env.ARCHIVIST_DEVNET_URL}`
-        : `https://public.sepolia.rpc.status.network`,
-      chainId: 1660990954,
-      accounts: process.env.ARCHIVIST_DEVNET_PRIVATE_KEY
-        ? [process.env.ARCHIVIST_DEVNET_PRIVATE_KEY]
-        : [],
-    },
     testnet: {
-      url: `${process.env.ARCHIVIST_TESTNET_URL}`,
+      url: process.env.ARCHIVIST_TESTNET_URL
+        ? `${process.env.ARCHIVIST_TESTNET_URL}`
+        : `https://sepolia-rollup.arbitrum.io/rpc`,
+      chainId: 421614,
+      accounts: process.env.ARCHIVIST_TESTNET_PRIVATE_KEY
+        ? [process.env.ARCHIVIST_TESTNET_PRIVATE_KEY]
+        : [],
     },
   },
 }
