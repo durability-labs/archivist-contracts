@@ -1,0 +1,112 @@
+{
+  "_format": "hh-sol-artifact-1",
+  "contractName": "TestVerifier",
+  "sourceName": "contracts/TestVerifier.sol",
+  "abi": [
+    {
+      "inputs": [
+        {
+          "components": [
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "x",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "y",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct G1Point",
+              "name": "a",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "real",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "imag",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct Fp2Element",
+                  "name": "x",
+                  "type": "tuple"
+                },
+                {
+                  "components": [
+                    {
+                      "internalType": "uint256",
+                      "name": "real",
+                      "type": "uint256"
+                    },
+                    {
+                      "internalType": "uint256",
+                      "name": "imag",
+                      "type": "uint256"
+                    }
+                  ],
+                  "internalType": "struct Fp2Element",
+                  "name": "y",
+                  "type": "tuple"
+                }
+              ],
+              "internalType": "struct G2Point",
+              "name": "b",
+              "type": "tuple"
+            },
+            {
+              "components": [
+                {
+                  "internalType": "uint256",
+                  "name": "x",
+                  "type": "uint256"
+                },
+                {
+                  "internalType": "uint256",
+                  "name": "y",
+                  "type": "uint256"
+                }
+              ],
+              "internalType": "struct G1Point",
+              "name": "c",
+              "type": "tuple"
+            }
+          ],
+          "internalType": "struct Groth16Proof",
+          "name": "proof",
+          "type": "tuple"
+        },
+        {
+          "internalType": "uint256[]",
+          "name": "",
+          "type": "uint256[]"
+        }
+      ],
+      "name": "verify",
+      "outputs": [
+        {
+          "internalType": "bool",
+          "name": "",
+          "type": "bool"
+        }
+      ],
+      "stateMutability": "pure",
+      "type": "function"
+    }
+  ],
+  "bytecode": "0x6080604052348015600f57600080fd5b506101908061001f6000396000f3fe608060405234801561001057600080fd5b506004361061002b5760003560e01c806394c8919d14610030575b600080fd5b61004361003e3660046100c7565b610057565b604051901515815260200160405180910390f35b6000833515801561006a57506020840135155b801561007857506040840135155b801561008657506060840135155b801561009457506080840135155b80156100a2575060a0840135155b80156100b0575060c0840135155b80156100be575060e0840135155b15949350505050565b60008060008385036101208112156100de57600080fd5b6101008112156100ed57600080fd5b5083925061010084013567ffffffffffffffff81111561010c57600080fd5b8401601f8101861361011d57600080fd5b803567ffffffffffffffff81111561013457600080fd5b8660208260051b840101111561014957600080fd5b93966020919091019550929350505056fea264697066735822122037f7f04ac498a466e7fd48762cac35c43d208c469972879db92b3c7d241232b964736f6c634300081c0033",
+  "deployedBytecode": "0x608060405234801561001057600080fd5b506004361061002b5760003560e01c806394c8919d14610030575b600080fd5b61004361003e3660046100c7565b610057565b604051901515815260200160405180910390f35b6000833515801561006a57506020840135155b801561007857506040840135155b801561008657506060840135155b801561009457506080840135155b80156100a2575060a0840135155b80156100b0575060c0840135155b80156100be575060e0840135155b15949350505050565b60008060008385036101208112156100de57600080fd5b6101008112156100ed57600080fd5b5083925061010084013567ffffffffffffffff81111561010c57600080fd5b8401601f8101861361011d57600080fd5b803567ffffffffffffffff81111561013457600080fd5b8660208260051b840101111561014957600080fd5b93966020919091019550929350505056fea264697066735822122037f7f04ac498a466e7fd48762cac35c43d208c469972879db92b3c7d241232b964736f6c634300081c0033",
+  "linkReferences": {},
+  "deployedLinkReferences": {}
+}
