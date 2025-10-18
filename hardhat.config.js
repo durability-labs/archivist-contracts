@@ -32,6 +32,15 @@ module.exports = {
     disttestnetwork: {
       url: `${process.env.DISTTEST_NETWORK_URL}`,
     },
+    devnet: {
+      url: process.env.ARCHIVIST_DEVNET_URL
+        ? `${process.env.ARCHIVIST_DEVNET_URL}`
+        : `https://rpc.devnet.archivist.storage`,
+      chainId: 412346,
+      accounts: process.env.ARCHIVIST_DEVNET_PRIVATE_KEY
+        ? [process.env.ARCHIVIST_DEVNET_PRIVATE_KEY]
+        : [],
+    },
     testnet: {
       url: process.env.ARCHIVIST_TESTNET_URL
         ? `${process.env.ARCHIVIST_TESTNET_URL}`
