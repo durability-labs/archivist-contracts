@@ -8,10 +8,10 @@ module.exports = {
   proofs: {
     // period has to be less than downtime * blocktime
     // blocktime can be 1 second with hardhat in automine mode
-    period: 90, // seconds
-    timeout: 30, // seconds
-    downtime: 96, // number of blocks
-    downtimeProduct: 97, // number of blocks
+    period: 20, // seconds
+    timeout: 10, // seconds
+    downtime: 128, // number of blocks
+    downtimeProduct: 131, // number of blocks
     zkeyHash: "",
   },
   reservations: {
