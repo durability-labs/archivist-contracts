@@ -11,10 +11,10 @@ const DEFAULT_CONFIGURATION = {
   },
   proofs: {
     // period has to be less than downtime * blocktime
-    period: 120, // seconds
-    timeout: 30, // seconds
-    downtime: 64, // number of blocks
-    downtimeProduct: 67, // number of blocks
+    period: 20, // seconds
+    timeout: 10, // seconds
+    downtime: 128, // number of blocks
+    downtimeProduct: 131, // number of blocks
     zkeyHash: "",
   },
   reservations: {
