@@ -10,11 +10,11 @@ const DEFAULT_CONFIGURATION = {
     validatorRewardPercentage: 20, // percentage of the slashed amount going to the validators
   },
   proofs: {
-    // period has to be less than downtime * blocktime
-    period: 20, // seconds
-    timeout: 10, // seconds
-    downtime: 128, // number of blocks
-    downtimeProduct: 131, // number of blocks
+    // period + timeout has to be less than downtime * blocktime
+    period: 300, // seconds
+    timeout: 60, // seconds
+    downtime: 32, // number of blocks
+    downtimeProduct: 37, // number of blocks
     zkeyHash: "",
   },
   reservations: {

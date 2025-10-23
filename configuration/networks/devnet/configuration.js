@@ -10,10 +10,10 @@ module.exports = {
     validatorRewardPercentage: asNumber(process.env.DEVNET_VALIDATORREWARD ? process.env.DEVNET_VALIDATORREWARD : 20),
   },
   proofs: {
-    period: asNumber(process.env.DEVNET_PERIOD ? process.env.DEVNET_PERIOD : 20),
-    timeout: asNumber(process.env.DEVNET_TIMEOUT ? process.env.DEVNET_TIMEOUT : 10),
-    downtime: asNumber(process.env.DEVNET_DOWNTIME ? process.env.DEVNET_DOWNTIME : 128),
-    downtimeProduct: asNumber(process.env.DEVNET_DOWNTIMEPRODUCT ? process.env.DEVNET_DOWNTIMEPRODUCT : 131),
+    period: asNumber(process.env.DEVNET_PERIOD ? process.env.DEVNET_PERIOD : 300),
+    timeout: asNumber(process.env.DEVNET_TIMEOUT ? process.env.DEVNET_TIMEOUT : 60),
+    downtime: asNumber(process.env.DEVNET_DOWNTIME ? process.env.DEVNET_DOWNTIME : 32),
+    downtimeProduct: asNumber(process.env.DEVNET_DOWNTIMEPRODUCT ? process.env.DEVNET_DOWNTIMEPRODUCT : 37),
     zkeyHash: "",
   },
   reservations: {
