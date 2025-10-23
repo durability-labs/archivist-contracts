@@ -10,10 +10,10 @@ module.exports = {
     validatorRewardPercentage: asNumber(process.env.TESTNET_VALIDATORREWARD ? process.env.TESTNET_VALIDATORREWARD : 20),
   },
   proofs: {
-    period: asNumber(process.env.TESTNET_PERIOD ? process.env.TESTNET_PERIOD : 20),
-    timeout: asNumber(process.env.TESTNET_TIMEOUT ? process.env.TESTNET_TIMEOUT : 10),
-    downtime: asNumber(process.env.TESTNET_DOWNTIME ? process.env.TESTNET_DOWNTIME : 128),
-    downtimeProduct: asNumber(process.env.TESTNET_DOWNTIMEPRODUCT ? process.env.TESTNET_DOWNTIMEPRODUCT : 131),
+    period: asNumber(process.env.TESTNET_PERIOD ? process.env.TESTNET_PERIOD : 300),
+    timeout: asNumber(process.env.TESTNET_TIMEOUT ? process.env.TESTNET_TIMEOUT : 60),
+    downtime: asNumber(process.env.TESTNET_DOWNTIME ? process.env.TESTNET_DOWNTIME : 32),
+    downtimeProduct: asNumber(process.env.TESTNET_DOWNTIMEPRODUCT ? process.env.TESTNET_DOWNTIMEPRODUCT : 37),
     zkeyHash: "",
   },
   reservations: {

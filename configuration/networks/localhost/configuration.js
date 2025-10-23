@@ -6,9 +6,9 @@ module.exports = {
     validatorRewardPercentage: 20, // percentage of the slashed amount going to the validators
   },
   proofs: {
-    // period has to be less than downtime * blocktime
+    // period + timeout has to be less than downtime * blocktime
     // blocktime can be 1 second with hardhat in automine mode
-    period: 20, // seconds
+    period: 60, // seconds
     timeout: 10, // seconds
     downtime: 128, // number of blocks
     downtimeProduct: 131, // number of blocks
