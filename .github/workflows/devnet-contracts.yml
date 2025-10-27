@@ -14,12 +14,12 @@ on:
       token_address:
         description: Already deployed token address
         required: false
-        default: "0xAB35d6870a2C7234802c070bbb69D921E5d7b7cf"
+        default: "0x7AC8a39172e44e66F719e0960F1Ee965Fe49AC1c"
         type: string
       rpc_endpoint:
         description: RPC endpoint
         required: false
-        default: https://public.sepolia.rpc.status.network
+        default: https://rpc.devnet.archivist.storage
         type: string
       contracts_ref:
         description: "Contracts ref: blank = current branch"
@@ -55,7 +55,7 @@ jobs:
         env:
           TOKEN_ADDRESS: ${{ inputs.token_address }}
           ARCHIVIST_DEVNET_URL: ${{ inputs.rpc_endpoint }}
-          ARCHIVIST_DEVNET_PRIVATE_KEY: ${{ secrets.ARCHIVIST_DEVNET_PRIVATE_KEY }}
+          ARCHIVIST_DEVNET_PRIVATE_KEY: ${{ secrets.DEVNET_CONTRACTS_DEPLOYER_PRIVATE_KEY }}
           HARDHAT_IGNITION_CONFIRM_RESET: false
           HARDHAT_IGNITION_CONFIRM_DEPLOYMENT: false
 
@@ -66,23 +66,15 @@ jobs:
           marketplace_address=$(jq -r '."Marketplace#Marketplace"' "ignition/deployments/${{ inputs.network }}/deployed_addresses.json")
           echo "${marketplace_address}" > "${{ env.ADDRESS_TYPE }}"
 
-          # Debug
-          cat "${{ env.ADDRESS_TYPE }}"
-          ls -la "ignition/deployments/${{ inputs.network }}/deployed_addresses.json"
-          cat "ignition/deployments/${{ inputs.network }}/deployed_addresses.json"
-          jq -r '."Marketplace#Marketplace"' "ignition/deployments/${{ inputs.network }}/deployed_addresses.json"
-
-          # Primary bucket
-          aws s3 cp \
-            --acl public-read \
-            --content-type "text/plain" \
-            ${{ env.ADDRESS_TYPE }} s3://${{ secrets.S3_PRIMARY_BUCKET }}/${network_path}/${{ env.ADDRESS_TYPE }}
-
-          # Secondary bucket
-          aws s3 cp \
-            --acl public-read \
-            --content-type "text/plain" \
-            ${{ env.ADDRESS_TYPE }} s3://${{ secrets.S3_SECONDARY_BUCKET }}/${network_path}/${{ env.ADDRESS_TYPE}}
+          # Update address
+          buckets="${{ secrets.S3_PRIMARY_BUCKET }} ${{ secrets.S3_SECONDARY_BUCKET }}"
+          for bucket in ${buckets}; do
+            aws s3 cp \
+              --acl public-read \
+              --content-type "text/plain" \
+              latest "s3://${bucket}/${network}/${record}"
+              ${{ env.ADDRESS_TYPE }} s3://${bucket}/${network_path}/${{ env.ADDRESS_TYPE }}
+          done
 
           # Flush cache
           invalidation_id=$(aws cloudfront create-invalidation --distribution-id ${{ secrets.DISTRIBUTION_ID }} --paths "/${network_path}/${{ env.ADDRESS_TYPE }}" | jq -r '.Invalidation.Id')
