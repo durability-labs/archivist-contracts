@@ -72,7 +72,6 @@ jobs:
             aws s3 cp \
               --acl public-read \
               --content-type "text/plain" \
-              latest "s3://${bucket}/${network}/${record}"
               ${{ env.ADDRESS_TYPE }} s3://${bucket}/${network_path}/${{ env.ADDRESS_TYPE }}
           done
 
