@@ -1,6 +1,5 @@
 name: Devnet - Contracts deployment
 
-
 on:
   workflow_dispatch:
     inputs:
@@ -27,31 +26,52 @@ on:
         type: string
         default: ''
 
-
 env:
   NETWORK: ${{ inputs.network }}
   ADDRESS_TYPE: latest
+  CONTRACTS_REVISION: ${{ inputs.contracts_ref }}
+  CONFIG_REPOSITORY: archivist-config
+  CONFIG_REPOSITORY_BRANCH: main
   MARKETPLACE_ADDRESS_URL: https://marketplace.archivist.storage
-
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
-      - uses: actions/checkout@v4
+      - name: Create access token
+        uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ secrets.DEPLOYER_APP_ID }}
+          private-key: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ env.CONFIG_REPOSITORY }}
+
+      - name: Checkout contracts repository
+        uses: actions/checkout@v4
         with:
           ref: ${{ inputs.contracts_ref }}
 
-      - uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
         with:
           node-version: 22
 
       - name: Install dependencies
         run: npm ci
 
-      - name: Deploy
+      - name: Deploy contracts
         run: |
+            # Deploy
             npm run deploy -- --network "${{ inputs.network }}" --deployment-id "${{ inputs.network }}" --reset
+
+            # Stage deployed_addresses.json and artifacts/*.json
+            git add -f ignition/deployments/${{ inputs.network }}/**/*.json ':^ignition/deployments/${{ inputs.network }}/**/*.dbg.json' \
+              ':^ignition/deployments/${{ inputs.network }}/journal.jsonl' \
+              ':^ignition/deployments/${{ inputs.network }}/build-info'
+
         env:
           TOKEN_ADDRESS: ${{ inputs.token_address }}
           ARCHIVIST_DEVNET_URL: ${{ inputs.rpc_endpoint }}
@@ -59,7 +79,16 @@ jobs:
           HARDHAT_IGNITION_CONFIRM_RESET: false
           HARDHAT_IGNITION_CONFIRM_DEPLOYMENT: false
 
-      - name: Update marketplace address
+      - name: Commit deployment artifacts
+        uses: planetscale/ghcommit-action@v0.2.18
+        with:
+          commit_message: "chore(${{ env.NETWORK }}): contracts deployment artifacts\n${{ github.actor }}: ${{ github.event.head_commit.message }}\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          repo: ${{ github.repository }}
+          branch: ${{ github.event.repository.default_branch }}
+        env:
+          GITHUB_TOKEN: ${{secrets.GITHUB_TOKEN}}
+
+      - name: Update marketplace address endpoint
         run: |
           # Variables
           network_path="${NETWORK//_/-}"
@@ -83,8 +112,45 @@ jobs:
           AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
 
-      - name: Show marketplace address
+      - name: Check marketplace address endpoint
         run: |
           network_path="${NETWORK//_/-}"
           echo "Marketplace address endpoint: ${{ env.MARKETPLACE_ADDRESS_URL }}/${network_path}/${{ env.ADDRESS_TYPE }}"
           curl -s ${{ env.MARKETPLACE_ADDRESS_URL }}/${network_path}/${{ env.ADDRESS_TYPE }}
+
+      - name: Set outputs
+        id: marketplace
+        run: |
+          echo "address=$(jq -r '."Marketplace#Marketplace"' "ignition/deployments/${{ inputs.network }}/deployed_addresses.json")" >> $GITHUB_OUTPUT
+          echo "abi=$(jq '.abi | tojson' "ignition/deployments/${{ inputs.network }}/artifacts/Marketplace#Marketplace.json")" >> $GITHUB_OUTPUT
+
+      - name: Checkout config repository
+        uses: actions/checkout@v4
+        with:
+          repository: ${{ github.repository_owner }}/${{ env.CONFIG_REPOSITORY }}
+          ref: ${{ env.CONFIG_REPOSITORY_BRANCH }}
+          token: ${{ steps.app-token.outputs.token }}
+
+      - name: Update config
+        run: |
+          # Variables
+          config="${{ env.NETWORK }}.json"
+          config_updated="${{ env.NETWORK }}-updated.json"
+
+          # Functions
+          rename_config() {
+            mv "${config_updated}" "${config}"
+          }
+
+          # .marketplace
+          jq -r '.marketplace[].contractAddress |= "${{ steps.marketplace.outputs.address }}"' "${config}" > "${config_updated}" && rename_config
+          jq -r '.marketplace[].abi |= ${{ steps.marketplace.outputs.abi }}' "${config}" > "${config_updated}" && rename_config
+
+      - name: Commit updated config
+        uses: planetscale/ghcommit-action@v0.2.18
+        with:
+          commit_message: "chore(${{ env.NETWORK }}): marketplace updated\n${{ github.actor }}: ${{ github.event.head_commit.message }}\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          repo: ${{ github.repository_owner }}/${{ env.CONFIG_REPOSITORY }}
+          branch: ${{ env.CONFIG_REPOSITORY_BRANCH }}
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
