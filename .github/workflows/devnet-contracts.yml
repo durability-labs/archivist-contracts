@@ -80,6 +80,7 @@ jobs:
           HARDHAT_IGNITION_CONFIRM_DEPLOYMENT: false
 
       - name: Commit deployment artifacts
+        if: false
         uses: planetscale/ghcommit-action@v0.2.18
         with:
           commit_message: "chore(${{ env.NETWORK }}): contracts deployment artifacts\n${{ github.actor }}: ${{ github.event.head_commit.message }}\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
