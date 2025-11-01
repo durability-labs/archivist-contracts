@@ -83,7 +83,7 @@ jobs:
         if: false
         uses: planetscale/ghcommit-action@v0.2.18
         with:
-          commit_message: "chore(${{ env.NETWORK }}): contracts deployment artifacts\n${{ github.actor }}: ${{ github.event.head_commit.message }}\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          commit_message: "chore(${{ env.NETWORK }}): marketplace updated\n${{ github.actor }}\n${{ github.ref_type }}: ${{ github.ref_name }}\n${{ github.event_name }}: ${{ github.repository }}\n${{ github.event.head_commit.message || 'triggered manually' }}\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           repo: ${{ github.repository }}
           branch: ${{ github.event.repository.default_branch }}
         env:
@@ -150,7 +150,7 @@ jobs:
       - name: Commit updated config
         uses: planetscale/ghcommit-action@v0.2.18
         with:
-          commit_message: "chore(${{ env.NETWORK }}): marketplace updated\n${{ github.actor }}: ${{ github.event.head_commit.message }}\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
+          commit_message: "chore(${{ env.NETWORK }}): marketplace updated\n${{ github.actor }}\n${{ github.ref_type }}: ${{ github.ref_name }}\n${{ github.event_name }}: ${{ github.repository }}\n${{ github.event.head_commit.message || 'triggered manually' }}\n${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
           repo: ${{ github.repository_owner }}/${{ env.CONFIG_REPOSITORY }}
           branch: ${{ env.CONFIG_REPOSITORY_BRANCH }}
         env:
