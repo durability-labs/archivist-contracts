@@ -13,7 +13,7 @@ on:
       token_address:
         description: Already deployed token address
         required: false
-        default: "0x7AC8a39172e44e66F719e0960F1Ee965Fe49AC1c"
+        default: "0xE2566cC08913e2d8ECe3517E635335880C1c400a"
         type: string
       rpc_endpoint:
         description: RPC endpoint

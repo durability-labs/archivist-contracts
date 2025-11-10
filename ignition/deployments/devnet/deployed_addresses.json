@@ -1,6 +1,6 @@
 {
-  "Token#TestToken": "0x7AC8a39172e44e66F719e0960F1Ee965Fe49AC1c",
-  "Verifier#Groth16Verifier": "0x00557FB1fadc1a8D1AB1A29b2792b91611ce3017",
-  "Verifier#TestVerifier": "0x9eeb1a22b3a440f44524cba8bb5b6A0A87153698",
-  "Marketplace#Marketplace": "0x3885D426801B28D97D70b7ebB22b0fA4b580E4eD"
+  "Token#TestToken": "0xE2566cC08913e2d8ECe3517E635335880C1c400a",
+  "Verifier#Groth16Verifier": "0xC530706646a949bEd5847C2d9A5f3bc6d60b8f5d",
+  "Verifier#TestVerifier": "0x9A351Fd5d76003cf66E43680091d57370dcB9867",
+  "Marketplace#Marketplace": "0x0a18D0ccE366C506F8ad17E790C5431dB303459F"
 }
