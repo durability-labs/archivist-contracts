@@ -1,0 +1,256 @@
+name: Testnet - Contracts deployment
+
+on:
+  workflow_dispatch:
+    inputs:
+      network:
+        description: Network deploy on
+        required: true
+        default: testnet
+        options:
+          - testnet
+        type: choice
+      token_address:
+        description: Already deployed token address
+        required: false
+        default: "0x3b7412Ee1144b9801341A4F391490eB735DDc005"
+        type: string
+      rpc_endpoint:
+        description: RPC endpoint
+        required: false
+        default: https://rpc.testnet.archivist.storage
+        type: string
+      contracts_ref:
+        description: "Contracts ref: blank = current branch"
+        required: false
+        type: string
+        default: ''
+      part_of:
+        description: Reference issue url
+        required: false
+        type: string
+        default: ''
+
+env:
+  NETWORK: ${{ inputs.network }}
+  CONFIG_REPOSITORY: archivist-config
+  ARCHIVIST_REPOSITORY: archivist-node
+  ARCHIVIST_CONTRACTS_FILE: archivist/contracts/deployment.nim
+  NODE_VERSION: 22
+
+jobs:
+  contracts-deploy:
+    runs-on: ubuntu-latest
+    outputs:
+      part_of: ${{ steps.variables.outputs.part_of }}
+      chain_id: ${{ steps.variables.outputs.chain_id }}
+      contracts_ref: ${{ steps.variables.outputs.contracts_ref }}
+      marketplace_abi: ${{ steps.variables.outputs.marketplace_abi }}
+      marketplace_address: ${{ steps.variables.outputs.marketplace_address }}
+    steps:
+      - name: Create access token
+        uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ secrets.DEPLOYER_APP_ID }}
+          private-key: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          ref: ${{ inputs.contracts_ref }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Deploy contracts
+        run: npm run deploy -- --network "${{ env.NETWORK }}" --deployment-id "${{ env.NETWORK }}" --reset
+        env:
+          TOKEN_ADDRESS: ${{ inputs.token_address }}
+          ARCHIVIST_TESTNET_URL: ${{ inputs.rpc_endpoint }}
+          ARCHIVIST_TESTNET_PRIVATE_KEY: ${{ secrets.TESTNET_CONTRACTS_DEPLOYER_PRIVATE_KEY }}
+          HARDHAT_IGNITION_CONFIRM_RESET: false
+          HARDHAT_IGNITION_CONFIRM_DEPLOYMENT: false
+
+      - name: Staging changes
+        run: |
+          rm -f ignition/deployments/${{ env.NETWORK }}/journal.jsonl
+          rm -f ignition/deployments/${{ env.NETWORK }}/artifacts/*.dbg.json
+          rm -rf ignition/deployments/${{ env.NETWORK }}/build-info
+          git add -f ignition/deployments/${{ env.NETWORK }}/artifacts
+          git add ignition/deployments/${{ env.NETWORK }}/deployed_addresses.json
+
+      - name: Set outputs
+        id: variables
+        run: |
+          if [[ -n "${{ inputs.contracts_ref }}" ]]; then
+            echo "contracts_ref=with contracts_ref ${{ inputs.contracts_ref}}" >> $GITHUB_OUTPUT
+          fi
+          if [[ -n "${{ inputs.part_of }}" ]]; then
+            echo "part_of=Part of ${{ inputs.part_of}}." >> $GITHUB_OUTPUT
+          fi
+          echo "marketplace_abi=$(jq '.abi | tojson' "ignition/deployments/${{ env.NETWORK }}/artifacts/Marketplace#Marketplace.json")" >> $GITHUB_OUTPUT
+          echo "marketplace_address=$(jq -r '."Marketplace#Marketplace"' "ignition/deployments/${{ env.NETWORK }}/deployed_addresses.json")" >> $GITHUB_OUTPUT
+
+          # Chain ID script
+          script="chain-id.js"
+          cat <<EOF > "${script}"
+          const hre = require("hardhat");
+          async function getChainId() {
+            const chainId = hre.network.config.chainId;
+            console.log(chainId);
+            return chainId;
+          }
+          getChainId();
+          EOF
+
+          # Chain ID
+          echo "chain_id=$(npx hardhat run "${script}" --network ${{ env.NETWORK }})" >> $GITHUB_OUTPUT
+          rm -f "${script}"
+
+      - name: Contracts - Create a PR with deployment artifacts
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: chore/${{ env.NETWORK }}-contracts-deployment-artifacts
+          branch-suffix: timestamp
+          sign-commits: true
+          commit-message: |
+            chore: ${{ env.NETWORK }} contracts deployment artifacts
+
+            ${{ github.actor }} triggered from a ${{ github.ref_type }} ${{ github.ref_name }} ${{ steps.variables.outputs.contracts_ref }}
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          base: ${{ github.event.repository.default_branch }}
+          title: "chore: ${{ env.NETWORK }} contracts deployment artifacts"
+          body: |
+            Contracts deployment artifacts for ${{ env.NETWORK }}.
+
+            ${{ steps.variables.outputs.part_of }}
+          assignees: ${{ github.actor }}
+          reviewers: ${{ github.actor }}
+          token: ${{ steps.app-token.outputs.token }}
+
+  config-update:
+    runs-on: ubuntu-latest
+    needs: contracts-deploy
+    steps:
+      - name: Create access token
+        uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ secrets.DEPLOYER_APP_ID }}
+          private-key: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ env.CONFIG_REPOSITORY }}
+
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ github.repository_owner }}/${{ env.CONFIG_REPOSITORY }}
+
+      - name: Set variables
+        run: echo "CONFIG_REPOSITORY_BRANCH=$(git remote show origin | awk '/HEAD branch:/ {print $NF}')" >> $GITHUB_ENV
+
+      - name: Update config
+        run: |
+          # Variables
+          config="${{ env.NETWORK }}.json"
+          config_updated="${{ env.NETWORK }}-updated.json"
+
+          # Functions
+          rename_config() {
+            mv "${config_updated}" "${config}"
+          }
+
+          # .marketplace
+          jq -r '.marketplace[].abi |= ${{ needs.contracts-deploy.outputs.marketplace_abi }}' "${config}" > "${config_updated}" && rename_config
+          jq -r '.marketplace[].contractAddress |= "${{ needs.contracts-deploy.outputs.marketplace_address }}"' "${config}" > "${config_updated}" && rename_config
+
+      - name: Create a PR with updated marketplace data
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: chore/${{ env.NETWORK }}-config-update
+          branch-suffix: timestamp
+          sign-commits: true
+          commit-message: |
+            chore(${{ env.NETWORK }}): marketplace updated
+
+            ${{ github.actor }} triggered from a ${{ github.ref_type }} ${{ github.ref_name }} ${{ needs.contracts-deploy.outputs.contracts_ref }}
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          base: ${{ env.CONFIG_REPOSITORY_BRANCH }}
+          title: "chore(${{ env.NETWORK }}): marketplace updated"
+          body: |
+            Config update for ${{ env.NETWORK }}.
+
+            ${{ needs.contracts-deploy.outputs.part_of }}
+          assignees: ${{ github.actor }}
+          reviewers: ${{ github.actor }}
+          token: ${{ steps.app-token.outputs.token }}
+
+  archivist-update:
+    runs-on: ubuntu-latest
+    needs: [contracts-deploy, config-update]
+    steps:
+      - name: Create access token
+        uses: actions/create-github-app-token@v2
+        id: app-token
+        with:
+          app-id: ${{ secrets.DEPLOYER_APP_ID }}
+          private-key: ${{ secrets.DEPLOYER_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ env.ARCHIVIST_REPOSITORY }}
+
+      - name: Checkout repository
+        uses: actions/checkout@v5
+        with:
+          repository: ${{ github.repository_owner }}/${{ env.ARCHIVIST_REPOSITORY }}
+
+      - name: Set variables
+        run: echo "ARCHIVIST_REPOSITORY_BRANCH=$(git remote show origin | awk '/HEAD branch:/ {print $NF}')" >> $GITHUB_ENV
+
+      - name: Update marketplace address
+        run: |
+          # Show
+          echo "Chain ID: ${{ needs.contracts-deploy.outputs.chain_id }}"
+          echo "Address: ${{ needs.contracts-deploy.outputs.marketplace_address }}"
+          echo "File: ${{ env.ARCHIVIST_CONTRACTS_FILE }}"
+
+          # Replace comment
+          network="testnet"
+          date=$(date -u +'%Y-%m-%d %H:%M:%S - %Z')
+          awk -v replacement="  # ${{ env.NETWORK }} - ${date}" \
+            'NR > 1 { if (/"${{ needs.contracts-deploy.outputs.chain_id }}":/) sub(/^  #.*$/, replacement, prev); print prev } { prev = $0 } END { print prev }' \
+            ${{ env.ARCHIVIST_CONTRACTS_FILE }} > ${{ env.ARCHIVIST_CONTRACTS_FILE }}.tmp && mv ${{ env.ARCHIVIST_CONTRACTS_FILE }}.tmp ${{ env.ARCHIVIST_CONTRACTS_FILE }}
+
+          # Replace address
+          sed -i '/"${{ needs.contracts-deploy.outputs.chain_id }}":/{N;s/"0x.*"/"${{ needs.contracts-deploy.outputs.marketplace_address }}"/}' ${{ env.ARCHIVIST_CONTRACTS_FILE }}
+
+          # Git status
+          git status
+
+      - name: Create a PR with updated marketplace address
+        uses: peter-evans/create-pull-request@v7
+        with:
+          branch: chore/${{ env.NETWORK }}-marketplace-address-update
+          branch-suffix: timestamp
+          sign-commits: true
+          commit-message: |
+            chore: ${{ env.NETWORK }} marketplace address updated [skip ci]
+
+            ${{ github.actor }} triggered from a ${{ github.ref_type }} ${{ github.ref_name }} ${{ needs.contracts-deploy.outputs.contracts_ref }}
+            ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          base: ${{ env.ARCHIVIST_REPOSITORY_BRANCH }}
+          title: "chore: ${{ env.NETWORK }} marketplace address updated [skip ci]"
+          body: |
+            Marketplace address update for ${{ env.NETWORK }}.
+
+            ${{ needs.contracts-deploy.outputs.part_of }}
+          assignees: ${{ github.actor }}
+          reviewers: ${{ github.actor }}
+          token: ${{ steps.app-token.outputs.token }}
