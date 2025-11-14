@@ -241,12 +241,12 @@ jobs:
           branch-suffix: timestamp
           sign-commits: true
           commit-message: |
-            chore: ${{ env.NETWORK }} marketplace address updated [skip ci]
+            chore: ${{ env.NETWORK }} marketplace address updated [release]
 
             ${{ github.actor }} triggered from a ${{ github.ref_type }} ${{ github.ref_name }} ${{ needs.contracts-deploy.outputs.contracts_ref }}
             ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
           base: ${{ env.ARCHIVIST_REPOSITORY_BRANCH }}
-          title: "chore: ${{ env.NETWORK }} marketplace address updated [skip ci]"
+          title: "chore: ${{ env.NETWORK }} marketplace address updated [release]"
           body: |
             Marketplace address update for ${{ env.NETWORK }}.
 
