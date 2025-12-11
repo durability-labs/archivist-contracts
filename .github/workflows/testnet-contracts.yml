@@ -20,11 +20,6 @@ on:
         required: false
         default: https://rpc.testnet.archivist.storage
         type: string
-      contracts_ref:
-        description: "Contracts ref: blank = current branch"
-        required: false
-        type: string
-        default: ''
       part_of:
         description: Reference issue url
         required: false
@@ -33,14 +28,46 @@ on:
 
 env:
   NETWORK: ${{ inputs.network }}
-  CONFIG_REPOSITORY: archivist-config
   ARCHIVIST_REPOSITORY: archivist-node
   ARCHIVIST_CONTRACTS_FILE: archivist/contracts/deployment.nim
+  CONFIG_REPOSITORY: archivist-config
+  CONFIG_ENDPOINT: https://config.archivist.storage
+  CONTRACTS_REPOSITORY: ${{ github.event.repository.name }}
   NODE_VERSION: 22
 
 jobs:
+  contracts-status:
+    runs-on: ubuntu-latest
+    outputs:
+      contracts_ref: ${{ steps.variables.outputs.contracts_ref }}
+      contracts_deploy: ${{ steps.variables.outputs.contracts_deploy }}
+    steps:
+      - name: Checkout archivist repository
+        uses: actions/checkout@v6
+        with:
+          repository: ${{ github.repository_owner }}/${{ env.ARCHIVIST_REPOSITORY }}
+          submodules: recursive
+
+      - name: Set outputs
+        id: variables
+        run: |
+          # Contracts versions
+          contracts_deployed=$(curl -s ${{ env.CONFIG_ENDPOINT }}/${{ env.NETWORK }}.json | jq -r '.archivist[].contracts')
+          contracts_submodule=$(git rev-parse --short HEAD:vendor/${{ env.CONTRACTS_REPOSITORY }})
+
+          # Check if contracts-deploy is needed
+          if [[ "${contracts_deployed}" != "${contracts_submodule}" ]]; then
+            echo "Contracts revision mismatch: deployed=${contracts_deployed} / submodule=${contracts_submodule}"
+            echo "contracts_deploy=true" >> $GITHUB_OUTPUT
+            echo "contracts_ref=$(git rev-parse HEAD:vendor/${{ env.CONTRACTS_REPOSITORY }})" >> $GITHUB_OUTPUT
+          else
+            echo "Contracts revision is the same: deployed=${contracts_deployed} / submodule=${contracts_submodule}"
+          fi
+
   contracts-deploy:
     runs-on: ubuntu-latest
+    needs: contracts-status
+    if: needs.contracts-status.outputs.contracts_deploy == 'true'
     outputs:
       part_of: ${{ steps.variables.outputs.part_of }}
       chain_id: ${{ steps.variables.outputs.chain_id }}
@@ -58,9 +85,9 @@ jobs:
           repositories: ${{ github.event.repository.name }}
 
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
-          ref: ${{ inputs.contracts_ref }}
+          ref: ${{ needs.contracts-status.outputs.contracts_ref }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
@@ -90,9 +117,7 @@ jobs:
       - name: Set outputs
         id: variables
         run: |
-          if [[ -n "${{ inputs.contracts_ref }}" ]]; then
-            echo "contracts_ref=with contracts_ref ${{ inputs.contracts_ref}}" >> $GITHUB_OUTPUT
-          fi
+          echo "contracts_ref=with contracts_ref ${{ needs.contracts-status.outputs.contracts_ref }}" >> $GITHUB_OUTPUT
           if [[ -n "${{ inputs.part_of }}" ]]; then
             echo "part_of=Part of ${{ inputs.part_of}}." >> $GITHUB_OUTPUT
           fi
@@ -150,7 +175,7 @@ jobs:
           repositories: ${{ env.CONFIG_REPOSITORY }}
 
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: ${{ github.repository_owner }}/${{ env.CONFIG_REPOSITORY }}
 
@@ -207,7 +232,7 @@ jobs:
           repositories: ${{ env.ARCHIVIST_REPOSITORY }}
 
       - name: Checkout repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           repository: ${{ github.repository_owner }}/${{ env.ARCHIVIST_REPOSITORY }}
 
