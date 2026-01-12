@@ -29,7 +29,7 @@ on:
 env:
   NETWORK: ${{ inputs.network }}
   ARCHIVIST_REPOSITORY: archivist-node
-  ARCHIVIST_CONTRACTS_FILE: archivist/contracts/deployment.nim
+  ARCHIVIST_CONTRACTS_FILE: archivist/marketplace/contracts/deployment.nim
   CONFIG_REPOSITORY: archivist-config
   CONFIG_ENDPOINT: https://config.archivist.storage
   CONTRACTS_REPOSITORY: ${{ github.event.repository.name }}
