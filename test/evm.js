@@ -40,16 +40,15 @@ async function ensureMinimumBlockHeight(height) {
 }
 
 async function setNextBlockTimestamp(timestamp) {
-  return time.setNextBlockTimestamp(timestamp)
+  await time.setNextBlockTimestamp(timestamp)
 }
 
 async function currentTime() {
-  return time.latest()
+  return await time.latest()
 }
 
 async function advanceTime(seconds) {
   await time.increase(seconds)
-  await mine()
 }
 
 async function advanceTimeTo(timestamp) {
