@@ -9,23 +9,27 @@ async function waitUntilCancelled(contract, request) {
   return advanceTimeTo(expiry + 1n)
 }
 
-async function waitUntilSlotsFilled(contract, request, proof, token, slots) {
+async function waitUntilSlotFilled(contract, request, proof, token, slotIndex) {
   let collateral = collateralPerSlot(request)
-  await token.approve(await contract.getAddress(), collateral * slots.length)
+  await token.approve(await contract.getAddress(), collateral)
+  await contract.reserveSlot(requestId(request), slotIndex)
+  await contract.fillSlot(requestId(request), slotIndex, proof)
+  const start = await currentTime()
+  const end = await contract.requestEnd(requestId(request))
+  return payoutForDuration(request, start, end)
+}
 
-  let requestEnd = await contract.requestEnd(requestId(request))
+async function waitUntilSlotsFilled(contract, request, proof, token, slots) {
   const payouts = []
   for (let slotIndex of slots) {
-    await contract.reserveSlot(requestId(request), slotIndex)
-    await contract.fillSlot(requestId(request), slotIndex, proof)
-
-    payouts[slotIndex] = payoutForDuration(
+    payouts[slotIndex] = await waitUntilSlotFilled(
+      contract,
       request,
-      await currentTime(),
-      requestEnd,
+      proof,
+      token,
+      slotIndex,
     )
   }
-
   return payouts
 }
 
@@ -50,7 +54,7 @@ async function waitUntilFailed(contract, request) {
   for (let i = 0; i <= request.ask.maxSlotLoss; i++) {
     slot.index = i
     let id = slotId(slot)
-    await contract.forciblyFreeSlot(id)
+    await contract.freeSlot(id)
   }
 }
 
@@ -59,7 +63,7 @@ async function waitUntilSlotFailed(contract, request, slot) {
   let freed = 0
   while (freed <= request.ask.maxSlotLoss) {
     if (index !== slot.index) {
-      await contract.forciblyFreeSlot(slotId({ ...slot, index }))
+      await contract.freeSlot(slotId({ ...slot, index }))
       freed++
     }
     index++
@@ -104,6 +108,7 @@ function littleEndianToBigInt(littleEndian) {
 module.exports = {
   waitUntilCancelled,
   waitUntilStarted,
+  waitUntilSlotFilled,
   waitUntilSlotsFilled,
   waitUntilFinished,
   waitUntilFailed,

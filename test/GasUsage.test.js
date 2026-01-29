@@ -15,7 +15,7 @@ const {
   currentTime,
 } = require("./evm")
 const { expect } = require("chai")
-const { patchOverloads } = require("./marketplace")
+const { patchOverloads, waitUntilFinished } = require("./marketplace")
 const { periodic } = require("./time")
 const { RequestState } = require("./requests")
 const MarketplaceModule = require("../ignition/modules/marketplace")
@@ -129,6 +129,7 @@ describe("Marketplace gas estimates", function () {
       const request = await requestStorage()
       const id = requestId(request)
       await startRequest(request)
+      await waitUntilFinished(marketplace, requestId(request))
       const gasUsage = []
       for (let i = 0; i < request.ask.slots; i++) {
         const slot = { request: id, index: i }

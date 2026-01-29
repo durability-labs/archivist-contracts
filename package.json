@@ -3,7 +3,6 @@
   "license": "MIT",
   "scripts": {
     "test": "npm run lint && hardhat test",
-    "fuzz": "hardhat compile && fuzzing/fuzz.sh",
     "start": "concurrently --names \"hardhat,deployment\"  --prefix \"[{time} {name}]\" \"hardhat node\" \"sleep 2 && npm run mine && npm run deploy -- --network localhost\"",
     "compile": "hardhat compile",
     "format": "prettier --write test/**/*.js --plugin=prettier-plugin-solidity contracts/**/*.sol ",
@@ -25,7 +24,7 @@
     "@stdlib/stats-binomial-test": "^0.2.2",
     "chai": "^4.5.0",
     "ethers": "6.14.4",
-    "hardhat": "^2.24.3",
+    "hardhat": "^2.28.3",
     "prettier": "^3.5.3",
     "prettier-plugin-solidity": "^1.4.3",
     "solhint": "^5.1.0",

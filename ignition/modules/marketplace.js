@@ -1,7 +1,7 @@
 const { buildModule } = require("@nomicfoundation/hardhat-ignition/modules")
 const { loadZkeyHash } = require("../../verifier/verifier.js")
 const { loadConfiguration } = require("../../configuration/configuration.js")
-const TokenModule = require("./token.js")
+const VaultModule = require("./vault.js")
 const VerifierModule = require("./verifier.js")
 
 function getDefaultConfig() {
@@ -12,13 +12,13 @@ function getDefaultConfig() {
 }
 
 module.exports = buildModule("Marketplace", (m) => {
-  const { token } = m.useModule(TokenModule)
+  const { vault, token } = m.useModule(VaultModule)
   const { verifier } = m.useModule(VerifierModule)
   const configuration = m.getParameter("configuration", getDefaultConfig())
 
   const marketplace = m.contract(
     "Marketplace",
-    [configuration, token, verifier],
+    [configuration, vault, verifier],
     {},
   )
 
@@ -30,7 +30,7 @@ module.exports = buildModule("Marketplace", (m) => {
 
     testMarketplace = m.contract(
       "TestMarketplace",
-      [configuration, token, testVerifier],
+      [configuration, vault, testVerifier],
       {},
     )
   }
@@ -38,6 +38,7 @@ module.exports = buildModule("Marketplace", (m) => {
   return {
     marketplace,
     testMarketplace,
-    token,
+    vault,
+    token
   }
 })
